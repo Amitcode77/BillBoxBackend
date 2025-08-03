@@ -1,5 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
+const cors = require('cors');
 const { connectDB } = require('./config/mongo.client');
 const dbConnectionMiddleware = require('./middleware/db.middleware');
 const ResponseUtils = require('./utils/response.utils');
@@ -13,6 +14,22 @@ connectDB();
 const app = express();
 
 // Middleware
+// Enable CORS for all routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  
+//   // Handle preflight requests
+//   if (req.method === 'OPTIONS') {
+//     res.status(204).end();
+//     return;
+//   }
+  
+  next();
+});
+
 app.use(express.json());
 
 // Health endpoint - outside API versioning and before DB middleware
@@ -24,10 +41,10 @@ app.use(dbConnectionMiddleware);
 // Routes
 app.use('/api/v1', require('./routes/index.route'));
 
-// 404 handler
-// app.use('/*', (req, res) => {
-//   ResponseUtils.notFound(res, 'Route not found');
-// });
+// 404 handler - catch all unmatched routes
+app.use((req, res) => {
+  ResponseUtils.notFound(res, 'Route not found');
+});
 
 // Global error handler
 app.use((err, req, res, next) => {
