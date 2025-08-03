@@ -1,5 +1,6 @@
 const BaseController = require('./base.controller');
 const productService = require('../services/product.service');
+const ResponseUtils = require('../utils/response.utils');
 
 class ProductController extends BaseController {
   constructor() {
@@ -12,34 +13,22 @@ class ProductController extends BaseController {
 
       // Validate request body
       if (!Array.isArray(quantityUpdates) || quantityUpdates.length === 0) {
-        return res.status(400).json({
-          error: 'Invalid request',
-          message: 'quantityUpdates must be a non-empty array'
-        });
+        return ResponseUtils.validationError(res, 'quantityUpdates must be a non-empty array');
       }
 
       // Validate each update object
       for (const update of quantityUpdates) {
         if (!update.productId || typeof update.quantity !== 'number') {
-          return res.status(400).json({
-            error: 'Invalid update format',
-            message: 'Each update must have productId and quantity fields'
-          });
+          return ResponseUtils.validationError(res, 'Each update must have productId and quantity fields');
         }
       }
 
       const result = await productService.updateQuantities(quantityUpdates);
       
-      res.status(200).json({
-        message: 'Bulk quantity update completed',
-        ...result
-      });
+      ResponseUtils.success(res, result, 'Bulk quantity update completed');
     } catch (error) {
       console.error('Bulk quantity update error:', error);
-      res.status(500).json({
-        error: 'Internal server error',
-        message: error.message
-      });
+      ResponseUtils.serverError(res, error.message);
     }
   }
 }

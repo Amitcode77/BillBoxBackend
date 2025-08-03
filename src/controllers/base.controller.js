@@ -1,3 +1,5 @@
+const ResponseUtils = require('../utils/response.utils');
+
 class BaseController {
   constructor(service) {
     this.service = service;
@@ -6,48 +8,48 @@ class BaseController {
   create = async (req, res) => {
     try {
       const item = await this.service.create(req.body);
-      res.status(201).json(item);
+      ResponseUtils.success(res, item, "Item created successfully", 201);
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      ResponseUtils.error(res, err.message, 400);
     }
   };
 
   getAll = async (req, res) => {
     try {
       const items = await this.service.findAll();
-      res.json(items);
+      ResponseUtils.success(res, items, "Items retrieved successfully");
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      ResponseUtils.error(res, err.message, 400);
     }
   };
 
   getById = async (req, res) => {
     try {
       const item = await this.service.findById(req.params.id);
-      if (!item) return res.status(404).json({ error: 'Not found' });
-      res.json(item);
+      if (!item) return ResponseUtils.notFound(res, 'Item not found');
+      ResponseUtils.success(res, item, "Item retrieved successfully");
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      ResponseUtils.error(res, err.message, 400);
     }
   };
 
   update = async (req, res) => {
     try {
       const item = await this.service.update(req.params.id, req.body);
-      if (!item) return res.status(404).json({ error: 'Not found' });
-      res.json(item);
+      if (!item) return ResponseUtils.notFound(res, 'Item not found');
+      ResponseUtils.success(res, item, "Item updated successfully");
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      ResponseUtils.error(res, err.message, 400);
     }
   };
 
   delete = async (req, res) => {
     try {
       const item = await this.service.delete(req.params.id);
-      if (!item) return res.status(404).json({ error: 'Not found' });
-      res.json({ message: 'Deleted' });
+      if (!item) return ResponseUtils.notFound(res, 'Item not found');
+      ResponseUtils.success(res, { deleted: true }, "Item deleted successfully");
     } catch (err) {
-      res.status(400).json({ error: err.message });
+      ResponseUtils.error(res, err.message, 400);
     }
   };
 }

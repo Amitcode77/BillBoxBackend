@@ -1,3 +1,5 @@
+const ResponseUtils = require('../utils/response.utils');
+
 class HealthController {
   async checkHealth(req, res) {
     try {
@@ -16,19 +18,24 @@ class HealthController {
       };
 
       const statusCode = dbConnected ? 200 : 503;
+      const message = dbConnected ? 'Health check successful' : 'Health check failed';
       
-      res.status(statusCode).json(healthStatus);
+      if (dbConnected) {
+        ResponseUtils.success(res, healthStatus, message, statusCode);
+      } else {
+        ResponseUtils.error(res, message, statusCode, healthStatus);
+      }
     } catch (error) {
       console.error('Health check error:', error);
-      res.status(503).json({
+      const errorData = {
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        error: 'Health check failed',
         database: {
           status: 'error',
           readyState: null
         }
-      });
+      };
+      ResponseUtils.serverError(res, 'Health check failed', errorData);
     }
   }
 }

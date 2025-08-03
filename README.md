@@ -108,6 +108,32 @@ BillBox-Backend/
 
 ## 📚 API Documentation
 
+### Response Format
+
+All API responses follow a standardized format:
+
+**Success Response:**
+```json
+{
+  "success": true,
+  "message": "success",
+  "data": {
+    // Response payload (object, array, etc.)
+  }
+}
+```
+
+**Error Response:**
+```json
+{
+  "success": false,
+  "message": "failed",
+  "data": {
+    // Additional error details (optional)
+  }
+}
+```
+
 ### Base URL
 ```
 http://localhost:5000/api/v1
@@ -118,6 +144,29 @@ http://localhost:5000/api/v1
 GET /health
 ```
 Returns database connection status and server health information.
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Health check successful",
+  "data": {
+    "status": "healthy",
+    "timestamp": "2024-01-01T00:00:00.000Z",
+    "database": {
+      "status": "connected",
+      "readyState": 1
+    },
+    "uptime": 123.456,
+    "memory": {
+      "rss": 12345678,
+      "heapTotal": 9876543,
+      "heapUsed": 5432109,
+      "external": 123456
+    }
+  }
+}
+```
 
 ### Products
 
