@@ -3,6 +3,7 @@ const router = express.Router();
 const ResponseUtils = require('../utils/response.utils');
 
 router.use('/health', require('./health.route'));
+router.use('/auth', require('./auth.route'));
 router.use('/product', require('./product.route'));
 router.use('/user', require('./user.route'));
 router.use('/invoice', require('./invoice.route'));

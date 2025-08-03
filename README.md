@@ -68,9 +68,62 @@ BillBox-Backend/
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js (v14 or higher)
-- MongoDB (v4.4 or higher)
+
+- Node.js (v16 or higher)
+- MongoDB
 - npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd BillBox-Backend
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+   ```env
+   MONGODB_URI=mongodb://localhost:27017/billbox
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   JWT_EXPIRY=24h
+   USE_JWT=true
+   PORT=5000
+   NODE_ENV=development
+   ```
+
+4. **Start the server**
+   ```bash
+   # Development mode with auto-reload
+   npm run dev
+   
+   # Production mode
+   npm start
+   ```
+
+### Creating a Test User
+
+To test the authentication system, create a user using the user creation endpoint:
+
+```http
+POST /api/v1/user
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "fullName": "Test User",
+  "phone": "+1234567890",
+  "password": "testpassword123",
+  "role": "staff"
+}
+```
+
+Then you can use these credentials to test the login endpoint.
 
 ### Installation
 
@@ -164,6 +217,111 @@ Returns database connection status and server health information.
       "heapUsed": 5432109,
       "external": 123456
     }
+  }
+}
+```
+
+### Authentication
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "securepassword"
+}
+```
+
+**JWT Mode Response (USE_JWT=true):**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "email": "user@example.com",
+      "fullName": "John Doe",
+      "phone": "+1234567890",
+      "role": "staff",
+      "permissions": [],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+**Simple Mode Response (USE_JWT=false):**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "user": {
+      "_id": "507f1f77bcf86cd799439011",
+      "email": "user@example.com",
+      "fullName": "John Doe",
+      "phone": "+1234567890",
+      "role": "staff",
+      "permissions": [],
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    "authenticated": true
+  }
+}
+```
+
+#### Logout
+```http
+POST /auth/logout
+Authorization: Bearer <token>  # Required only in JWT mode
+```
+
+**Response (both modes):**
+```json
+{
+  "success": true,
+  "message": "Logout successful",
+  "data": {
+    "loggedOut": true
+  }
+}
+```
+
+#### Get Current User Profile
+```http
+GET /auth/me
+Authorization: Bearer <token>  # Required in JWT mode
+Content-Type: application/json  # Required in simple mode
+
+# JWT Mode
+Authorization: Bearer <token>
+
+# Simple Mode
+{
+  "email": "user@example.com"
+}
+```
+
+**Response (both modes):**
+```json
+{
+  "success": true,
+  "message": "User profile retrieved successfully",
+  "data": {
+    "_id": "507f1f77bcf86cd799439011",
+    "email": "user@example.com",
+    "fullName": "John Doe",
+    "phone": "+1234567890",
+    "role": "staff",
+    "permissions": [],
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
   }
 }
 ```
@@ -308,11 +466,68 @@ DELETE /user/:id
 
 ## 🔧 Configuration
 
+### Authentication
+
+The API supports two authentication modes:
+
+1. **JWT Mode (Default)** - Uses JSON Web Tokens for stateless authentication
+2. **Simple Mode** - Uses email/password authentication for each request
+
+To switch between modes, set the `USE_JWT` environment variable:
+- `USE_JWT=true` (default) - JWT authentication
+- `USE_JWT=false` - Simple email/password authentication
+
+To protect routes, use the authentication middleware:
+
+```javascript
+const { authenticateToken, requireRole, requirePermission } = require('./middleware/auth.middleware');
+
+// Protect a route with authentication (works in both JWT and simple modes)
+router.get('/protected', authenticateToken, (req, res) => {
+  // req.user contains the authenticated user
+  res.json({ user: req.user });
+});
+
+// Protect a route with role-based access
+router.get('/admin-only', authenticateToken, requireRole('admin'), (req, res) => {
+  res.json({ message: 'Admin access granted' });
+});
+
+// Protect a route with permission-based access
+router.get('/manage-users', authenticateToken, requirePermission('manage_users'), (req, res) => {
+  res.json({ message: 'User management access granted' });
+});
+```
+
+**Authentication Modes:**
+
+1. **JWT Mode (USE_JWT=true):**
+   - Send `Authorization: Bearer <token>` header
+   - Token is obtained from login response
+   - Stateless authentication
+
+2. **Simple Mode (USE_JWT=false):**
+   - Send email and password in request body for each protected request
+   - No tokens required
+   - Stateful authentication (requires credentials each time)
+
+### CORS Configuration
+
+The API is configured to allow cross-origin requests from any origin with the following settings:
+
+- **Origin**: `*` (allows all origins)
+- **Methods**: GET, POST, PUT, PATCH, DELETE, OPTIONS
+- **Headers**: Content-Type, Authorization, X-Requested-With
+- **Credentials**: true (allows cookies and authentication headers)
+
 ### Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `MONGODB_URI` | MongoDB connection string | `mongodb://localhost:27017/billbox` |
+| `MONGODB_URI` | MongoDB connection string | Required |
+| `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key-change-in-production` |
+| `JWT_EXPIRY` | JWT token expiration time | `24h` |
+| `USE_JWT` | Enable/disable JWT authentication | `true` |
 | `PORT` | Server port | `5000` |
 | `NODE_ENV` | Environment mode | `development` |
 
